@@ -79,6 +79,13 @@
 #include <asm/smp.h>
 #endif
 
+#ifdef CONFIG_SEC_GPIO_DVS
+#include <linux/secgpio_dvs.h>
+#endif
+
+#ifdef CONFIG_TIMA_RKP
+#include <asm/cp15.h> 
+#endif
 static int kernel_init(void *);
 
 extern void init_IRQ(void);
@@ -795,6 +802,34 @@ static void run_init_process(const char *init_filename)
 	kernel_execve(init_filename, argv_init, envp_init);
 }
 
+#ifdef CONFIG_DEFERRED_INITCALLS
+extern initcall_t __deferred_initcall_start[], __deferred_initcall_end[];
+
+/* call deferred init routines */
+void __ref do_deferred_initcalls(void)
+{
+	initcall_t *call;
+	static int already_run=0;
+
+	if (already_run) {
+		printk("do_deferred_initcalls() has already run\n");
+		return;
+	}
+
+	already_run=1;
+
+	printk("Running do_deferred_initcalls()\n");
+
+	for(call = __deferred_initcall_start;
+	    call < __deferred_initcall_end; call++)
+		do_one_initcall(*call);
+
+	flush_scheduled_work();
+
+	free_initmem();
+}
+#endif
+
 /* This is a non __init function. Force it to be noinline otherwise gcc
  * makes it inline to init() and it becomes part of init.text section
  */
@@ -802,11 +837,24 @@ static noinline int init_post(void)
 {
 	/* need to finish all async __init code before freeing the memory */
 	async_synchronize_full();
+#ifndef CONFIG_DEFERRED_INITCALLS
 	free_initmem();
+#endif
 	mark_rodata_ro();
 	system_state = SYSTEM_RUNNING;
 	numa_default_policy();
 
+#ifdef CONFIG_SEC_GPIO_DVS
+#ifndef CONFIG_MACH_GARDA
+	printk(KERN_INFO "gpio_dvs_check call \n");
+	/************************ Caution !!! ****************************/
+	/* This function must be located in appropriate INIT position
+	 * in accordance with the specification of each BB vendor.
+	 */
+	/************************ Caution !!! ****************************/
+	gpio_dvs_check_initgpio();
+#endif
+#endif
 
 	current->signal->flags |= SIGNAL_UNKILLABLE;
 
@@ -836,6 +884,13 @@ static noinline int init_post(void)
 	      "See Linux Documentation/init.txt for guidance.");
 }
 
+#ifdef CONFIG_TIMA_RKP_30
+#define PGT_BIT_ARRAY_LEN 0x40000  /* 2GB memory needs */
+
+unsigned long pgt_bit_array[PGT_BIT_ARRAY_LEN];
+
+EXPORT_SYMBOL(pgt_bit_array);
+#endif
 static int __init kernel_init(void * unused)
 {
 	/*
@@ -861,7 +916,13 @@ static int __init kernel_init(void * unused)
 
 	do_pre_smp_initcalls();
 	lockup_detector_init();
-
+#ifdef CONFIG_TIMA_RKP	
+#ifdef CONFIG_TIMA_RKP_30 
+	tima_send_cmd5((unsigned long)_stext, (unsigned long)init_mm.pgd, (unsigned long)__init_begin, (unsigned long)__init_end,(unsigned long)__pa(pgt_bit_array), 0xc);
+#else
+	tima_send_cmd4((unsigned long)_stext, (unsigned long)init_mm.pgd, (unsigned long)__init_begin, (unsigned long)__init_end, 0xc);
+#endif
+#endif
 	smp_init();
 	sched_init_smp();
 

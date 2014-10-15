@@ -169,6 +169,14 @@ config LEDS_LP3944
 	  To compile this driver as a module, choose M here: the
 	  module will be called leds-lp3944.
 
+config LEDS_AN30259A
+        tristate "LED driver for panasonic AN30259A RGB LED"
+        depends on I2C
+        help
+          This option enables support for AN30259A RGB LED chips
+          accessed via the I2C bus.
+          AN30259A has three channel LED driver. By synchronous clock
+          function, combined operation is possible.
 config LEDS_LP5521
 	tristate "LED Support for N.S. LP5521 LED driver chip"
 	depends on LEDS_CLASS && I2C
@@ -387,12 +395,29 @@ config LEDS_TCA6507
 	  LED driver chips accessed via the I2C bus.
 	  Driver support brightness control and hardware-assisted blinking.
 
+config LEDS_MAX77803
+        bool "LED support for the MAX77803"
+        depends on LEDS_CLASS
+        depends on MFD_MAX77803
+        default y
+        help
+          This option enables support for the LEDs on the MAX77803.
+
 config LEDS_MAX8997
 	tristate "LED support for MAX8997 PMIC"
 	depends on LEDS_CLASS && MFD_MAX8997
 	help
 	  This option enables support for on-chip LED drivers on
 	  MAXIM MAX8997 PMIC.
+
+config LEDS_KTD2026
+	tristate "LED driver for KTD2026 LED"
+	depends on I2C
+	  help
+	  This option enables support for RGB LED driver
+	  accessed via the I2C bus.
+	  KTD2026 is a fully programmable, constant current
+	  three channel LED driver with flexible control interface.
 
 config LEDS_OT200
 	tristate "LED support for the Bachmann OT200"
@@ -408,6 +433,43 @@ config LEDS_TRIGGERS
 	  This option enables trigger support for the leds class.
 	  These triggers allow kernel events to drive the LEDs and can
 	  be configured via sysfs. If unsure, say Y.
+
+config FLASHLIGHT
+	bool "Flashlight Support"
+	help
+	  This option enables the led sysfs class in /sys/class/flashlight.
+
+config RT_FLASH_LED
+	tristate "Richtek flash LED driver support"
+	depends on FLASHLIGHT
+	help
+	  Say Y here to enable Richtek's flash LED driver HAL architecture
+
+config FLED_RT5033
+	tristate "Richtek RT5033 flash LED driver"
+	depends on RT_FLASH_LED && MFD_RT5033
+	help
+	  A driver for Richtek RT5033 flash LED
+choice
+	prompt "Control method"
+	depends on FLED_RT5033
+	default FLED_RT5033_I2C
+	help
+	  Choose which control signal to use for enabling/disabling torch and flash light.
+
+config FLED_RT5033_I2C
+	bool "I2C"
+	help
+	  Use I2C to enable/disable torch and flash light.
+	  If unsure, say N.
+
+config FLED_RT5033_EXT_GPIO
+	bool "External(or ISP) GPIO"
+	help
+	  Use GPIO pins to enable/disable torch and flash light.
+	  If unsure, say N.
+
+endchoice
 
 comment "LED Triggers"
 
@@ -467,6 +529,12 @@ config LEDS_TRIGGER_DEFAULT_ON
 	help
 	  This allows LEDs to be initialised in the ON state.
 	  If unsure, say Y.
+
+config LEDS_TRIGGER_SLEEP
+	tristate "LED Sleep Mode Trigger"
+	depends on LEDS_TRIGGERS && HAS_EARLYSUSPEND
+	help
+	  This turns LEDs on when the screen is off but the cpu still running.
 
 comment "iptables trigger is under Netfilter config (LED target)"
 	depends on LEDS_TRIGGERS

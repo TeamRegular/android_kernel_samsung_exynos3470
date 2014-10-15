@@ -64,6 +64,11 @@
 #include <plat/regs-serial.h>
 #include <plat/regs-spi.h>
 #include <plat/s3c64xx-spi.h>
+#include <plat/tv-core.h>
+#include <plat/pwm.h>
+#include <plat/fimc-core.h>
+#include <plat/mipi_csis.h>
+#include <plat/watchdog.h>
 
 static u64 samsung_device_dma_mask = DMA_BIT_MASK(32);
 
@@ -93,9 +98,10 @@ struct platform_device s3c_device_ac97 = {
 
 #ifdef CONFIG_PLAT_S3C24XX
 static struct resource s3c_adc_resource[] = {
-	[0] = DEFINE_RES_MEM(S3C24XX_PA_ADC, S3C24XX_SZ_ADC),
-	[1] = DEFINE_RES_IRQ(IRQ_TC),
-	[2] = DEFINE_RES_IRQ(IRQ_ADC),
+	[0] = DEFINE_RES_MEM_NAMED(S3C24XX_PA_ADC,
+				   S3C24XX_SZ_ADC, "samsung-adc"),
+	[1] = DEFINE_RES_IRQ_NAMED(IRQ_TC, "samsung-tc"),
+	[2] = DEFINE_RES_IRQ_NAMED(IRQ_ADC, "samsung-adc"),
 };
 
 struct platform_device s3c_device_adc = {
@@ -108,9 +114,11 @@ struct platform_device s3c_device_adc = {
 
 #if defined(CONFIG_SAMSUNG_DEV_ADC)
 static struct resource s3c_adc_resource[] = {
-	[0] = DEFINE_RES_MEM(SAMSUNG_PA_ADC, SZ_256),
-	[1] = DEFINE_RES_IRQ(IRQ_TC),
-	[2] = DEFINE_RES_IRQ(IRQ_ADC),
+	[0] = DEFINE_RES_MEM_NAMED(SAMSUNG_PA_ADC, SZ_256, "samsung-adc"),
+#ifdef IRQ_TC
+	[1] = DEFINE_RES_IRQ_NAMED(IRQ_TC, "samsung-tc"),
+#endif
+	[2] = DEFINE_RES_IRQ_NAMED(IRQ_ADC, "samsung-adc"),
 };
 
 struct platform_device s3c_device_adc = {
@@ -119,6 +127,16 @@ struct platform_device s3c_device_adc = {
 	.num_resources	= ARRAY_SIZE(s3c_adc_resource),
 	.resource	= s3c_adc_resource,
 };
+
+void __init s3c_adc_set_platdata(struct s3c_adc_platdata *pd)
+{
+	struct s3c_adc_platdata *npd;
+
+	npd = s3c_set_platdata(pd, sizeof(struct s3c_adc_platdata),
+				&s3c_device_adc);
+	if (!npd)
+		printk(KERN_ERR "%s: s3c_set_platdata is fail\n", __func__);
+}
 #endif /* CONFIG_SAMSUNG_DEV_ADC */
 
 /* Camif Controller */
@@ -184,8 +202,12 @@ struct platform_device s3c_device_fb = {
 
 void __init s3c_fb_set_platdata(struct s3c_fb_platdata *pd)
 {
-	s3c_set_platdata(pd, sizeof(struct s3c_fb_platdata),
+	struct s3c_fb_platdata *npd;
+
+	npd = s3c_set_platdata(pd, sizeof(struct s3c_fb_platdata),
 			 &s3c_device_fb);
+	if (!npd)
+		printk(KERN_ERR "%s: s3c_set_platdata is fail\n", __func__);
 }
 #endif /* CONFIG_S3C_DEV_FB */
 
@@ -212,6 +234,8 @@ struct platform_device s5p_device_fimc_md = {
 	.name	= "s5p-fimc-md",
 	.id	= -1,
 };
+
+struct s5p_platform_fimc s5p_fimc_md_platdata __initdata;
 #endif /* CONFIG_S5P_DEV_FIMC0 */
 
 #ifdef CONFIG_S5P_DEV_FIMC1
@@ -268,6 +292,102 @@ struct platform_device s5p_device_fimc3 = {
 };
 #endif /* CONFIG_S5P_DEV_FIMC3 */
 
+/* MIPI CSIS */
+#if defined(CONFIG_VIDEO_S5P_MIPI_CSIS) || defined(CONFIG_VIDEO_EXYNOS_MIPI_CSIS)
+#ifdef CONFIG_S5P_DEV_CSIS0
+static struct resource s5p_mipi_csis0_resource[] = {
+	[0] = DEFINE_RES_MEM(S5P_PA_MIPI_CSIS0, SZ_16K),
+	[1] = DEFINE_RES_IRQ(IRQ_MIPICSI0),
+};
+
+struct platform_device s5p_device_mipi_csis0 = {
+	.name		  = "s5p-mipi-csis",
+	.id		  = 0,
+	.num_resources	  = ARRAY_SIZE(s5p_mipi_csis0_resource),
+	.resource	  = s5p_mipi_csis0_resource,
+};
+
+struct s5p_platform_mipi_csis s5p_mipi_csis0_default_data __initdata = {
+	.clk_rate	= 166000000,
+	.lanes		= 2,
+	.alignment	= 32,
+	.hs_settle	= 12,
+	.phy_enable	= s5p_csis_phy_enable,
+};
+#endif
+#ifdef CONFIG_S5P_DEV_CSIS1
+static struct resource s5p_mipi_csis1_resource[] = {
+	[0] = DEFINE_RES_MEM(S5P_PA_MIPI_CSIS1, SZ_16K),
+	[1] = DEFINE_RES_IRQ(IRQ_MIPICSI1),
+};
+
+struct platform_device s5p_device_mipi_csis1 = {
+	.name		  = "s5p-mipi-csis",
+	.id		  = 1,
+	.num_resources	  = ARRAY_SIZE(s5p_mipi_csis1_resource),
+	.resource	  = s5p_mipi_csis1_resource,
+};
+
+struct s5p_platform_mipi_csis s5p_mipi_csis1_default_data __initdata = {
+	.clk_rate	= 166000000,
+	.lanes		= 2,
+	.alignment	= 32,
+	.hs_settle	= 12,
+	.phy_enable	= s5p_csis_phy_enable,
+};
+#endif
+#ifdef CONFIG_S5P_DEV_CSIS2
+static struct resource s5p_mipi_csis2_resource[] = {
+	[0] = DEFINE_RES_MEM(S5P_PA_MIPI_CSIS2, SZ_4K),
+	[1] = DEFINE_RES_IRQ(IRQ_MIPICSI2),
+};
+
+struct platform_device s5p_device_mipi_csis2 = {
+	.name		  = "s5p-mipi-csis",
+	.id		  = 2,
+	.num_resources	  = ARRAY_SIZE(s5p_mipi_csis2_resource),
+	.resource	  = s5p_mipi_csis2_resource,
+};
+
+struct s5p_platform_mipi_csis s5p_mipi_csis2_default_data __initdata = {
+	.clk_rate	= 166000000,
+	.lanes		= 2,
+	.alignment	= 32,
+	.hs_settle	= 12,
+	.phy_enable	= s5p_csis_phy_enable,
+};
+#endif
+#endif
+
+#ifdef CONFIG_VIDEO_S5P_FIMC_LITE
+#ifdef CONFIG_S5P_DEV_FLITE0
+static struct resource s5p_flite0_resource[] = {
+	[0] = DEFINE_RES_MEM(S5P_PA_FIMC_LITE0, SZ_4K),
+	[1] = DEFINE_RES_IRQ(IRQ_FIMC_LITE0),
+};
+
+struct platform_device s5p_device_flite0 = {
+	.name		= "s5p-fimc-lite",
+	.id		= 0,
+	.num_resources	= ARRAY_SIZE(s5p_flite0_resource),
+	.resource	= s5p_flite0_resource,
+};
+#endif
+#ifdef CONFIG_S5P_DEV_FLITE1
+static struct resource s5p_flite1_resource[] = {
+	[0] = DEFINE_RES_MEM(S5P_PA_FIMC_LITE1, SZ_4K),
+	[1] = DEFINE_RES_IRQ(IRQ_FIMC_LITE1),
+};
+
+struct platform_device s5p_device_flite1 = {
+	.name		= "s5p-fimc-lite",
+	.id		= 1,
+	.num_resources	= ARRAY_SIZE(s5p_flite1_resource),
+	.resource	= s5p_flite1_resource,
+};
+#endif
+#endif
+
 /* G2D */
 
 #ifdef CONFIG_S5P_DEV_G2D
@@ -318,10 +438,14 @@ struct platform_device s5p_device_jpeg = {
 
 #ifdef CONFIG_S5P_DEV_FIMD0
 static struct resource s5p_fimd0_resource[] = {
-	[0] = DEFINE_RES_MEM(S5P_PA_FIMD0, SZ_32K),
+	[0] = DEFINE_RES_MEM(S5P_PA_FIMD0, SZ_256K),
 	[1] = DEFINE_RES_IRQ(IRQ_FIMD0_VSYNC),
 	[2] = DEFINE_RES_IRQ(IRQ_FIMD0_FIFO),
 	[3] = DEFINE_RES_IRQ(IRQ_FIMD0_SYSTEM),
+	[4] = DEFINE_RES_MEM(0, SZ_1), /* to be populated later */
+#if defined(CONFIG_FB_I80_COMMAND_MODE)
+	[5] = DEFINE_RES_IRQ(IRQ_EINT(3)),
+#endif
 };
 
 struct platform_device s5p_device_fimd0 = {
@@ -337,10 +461,51 @@ struct platform_device s5p_device_fimd0 = {
 
 void __init s5p_fimd0_set_platdata(struct s3c_fb_platdata *pd)
 {
-	s3c_set_platdata(pd, sizeof(struct s3c_fb_platdata),
+	struct s3c_fb_platdata *npd;
+
+	npd = s3c_set_platdata(pd, sizeof(struct s3c_fb_platdata),
 			 &s5p_device_fimd0);
+	if (!npd)
+		printk(KERN_ERR "%s: s3c_set_platdata is fail\n", __func__);
 }
 #endif /* CONFIG_S5P_DEV_FIMD0 */
+
+/* FIMD1 */
+
+#ifdef CONFIG_S5P_DEV_FIMD1
+static struct resource s5p_fimd1_resource[] = {
+#ifdef CONFIG_FB_EXYNOS_FIMD_V8
+	[0] = DEFINE_RES_MEM(S5P_PA_FIMD1, SZ_256K),
+#else
+	[0] = DEFINE_RES_MEM(S5P_PA_FIMD1, SZ_32K),
+#endif
+	[1] = DEFINE_RES_IRQ(IRQ_FIMD1_VSYNC),
+	[2] = DEFINE_RES_IRQ(IRQ_FIMD1_FIFO),
+	[3] = DEFINE_RES_IRQ(IRQ_FIMD1_SYSTEM),
+	[4] = DEFINE_RES_MEM(0, SZ_1), /* to be populated later */
+};
+
+struct platform_device s5p_device_fimd1 = {
+	.name		= "s5p-fb",
+	.id		= 1,
+	.num_resources	= ARRAY_SIZE(s5p_fimd1_resource),
+	.resource	= s5p_fimd1_resource,
+	.dev		= {
+		.dma_mask		= &samsung_device_dma_mask,
+		.coherent_dma_mask	= DMA_BIT_MASK(32),
+	},
+};
+
+void __init s5p_fimd1_set_platdata(struct s3c_fb_platdata *pd)
+{
+	struct s3c_fb_platdata *npd;
+
+	npd = s3c_set_platdata(pd, sizeof(struct s3c_fb_platdata),
+			 &s5p_device_fimd1);
+	if (!npd)
+		printk(KERN_ERR "%s: s3c_set_platdata is fail\n", __func__);
+}
+#endif /* CONFIG_S5P_DEV_FIMD1 */
 
 /* HWMON */
 
@@ -353,8 +518,12 @@ struct platform_device s3c_device_hwmon = {
 
 void __init s3c_hwmon_set_platdata(struct s3c_hwmon_pdata *pd)
 {
-	s3c_set_platdata(pd, sizeof(struct s3c_hwmon_pdata),
+	struct s3c_hwmon_pdata *npd;
+
+	npd = s3c_set_platdata(pd, sizeof(struct s3c_hwmon_pdata),
 			 &s3c_device_hwmon);
+	if (!npd)
+		printk(KERN_ERR "%s: s3c_set_platdata is fail\n", __func__);
 }
 #endif /* CONFIG_S3C_DEV_HWMON */
 
@@ -490,7 +659,11 @@ void s3c_sdhci3_set_platdata(struct s3c_sdhci_platdata *pd)
 
 static struct resource s3c_i2c0_resource[] = {
 	[0] = DEFINE_RES_MEM(S3C_PA_IIC, SZ_4K),
+#ifdef CONFIG_SOC_EXYNOS5260
+	[1] = DEFINE_RES_IRQ(IRQ_IIC4),
+#else
 	[1] = DEFINE_RES_IRQ(IRQ_IIC),
+#endif
 };
 
 struct platform_device s3c_device_i2c0 = {
@@ -507,7 +680,7 @@ struct platform_device s3c_device_i2c0 = {
 struct s3c2410_platform_i2c default_i2c_data __initdata = {
 	.flags		= 0,
 	.slave_addr	= 0x10,
-	.frequency	= 100*1000,
+	.frequency	= 400*1000,
 	.sda_delay	= 100,
 };
 
@@ -517,12 +690,19 @@ void __init s3c_i2c0_set_platdata(struct s3c2410_platform_i2c *pd)
 
 	if (!pd) {
 		pd = &default_i2c_data;
+#ifdef CONFIG_SOC_EXYNOS5260
+		pd->bus_num = 4;
+#else
 		pd->bus_num = 0;
+#endif
 	}
 
 	npd = s3c_set_platdata(pd, sizeof(struct s3c2410_platform_i2c),
 			       &s3c_device_i2c0);
-
+	if (!npd) {
+		printk(KERN_ERR "%s: s3c_set_platdata is fail\n", __func__);
+		return;
+	}
 	if (!npd->cfg_gpio)
 		npd->cfg_gpio = s3c_i2c0_cfg_gpio;
 }
@@ -530,7 +710,11 @@ void __init s3c_i2c0_set_platdata(struct s3c2410_platform_i2c *pd)
 #ifdef CONFIG_S3C_DEV_I2C1
 static struct resource s3c_i2c1_resource[] = {
 	[0] = DEFINE_RES_MEM(S3C_PA_IIC1, SZ_4K),
+#ifdef CONFIG_SOC_EXYNOS5260
+	[1] = DEFINE_RES_IRQ(IRQ_IIC5),
+#else
 	[1] = DEFINE_RES_IRQ(IRQ_IIC1),
+#endif
 };
 
 struct platform_device s3c_device_i2c1 = {
@@ -546,12 +730,19 @@ void __init s3c_i2c1_set_platdata(struct s3c2410_platform_i2c *pd)
 
 	if (!pd) {
 		pd = &default_i2c_data;
+#ifdef CONFIG_SOC_EXYNOS5260
+		pd->bus_num = 5;
+#else
 		pd->bus_num = 1;
+#endif
 	}
 
 	npd = s3c_set_platdata(pd, sizeof(struct s3c2410_platform_i2c),
 			       &s3c_device_i2c1);
-
+	if (!npd) {
+		printk(KERN_ERR "%s: s3c_set_platdata is fail\n", __func__);
+		return;
+	}
 	if (!npd->cfg_gpio)
 		npd->cfg_gpio = s3c_i2c1_cfg_gpio;
 }
@@ -560,7 +751,11 @@ void __init s3c_i2c1_set_platdata(struct s3c2410_platform_i2c *pd)
 #ifdef CONFIG_S3C_DEV_I2C2
 static struct resource s3c_i2c2_resource[] = {
 	[0] = DEFINE_RES_MEM(S3C_PA_IIC2, SZ_4K),
+#ifdef CONFIG_SOC_EXYNOS5260
+	[1] = DEFINE_RES_IRQ(IRQ_IIC6),
+#else
 	[1] = DEFINE_RES_IRQ(IRQ_IIC2),
+#endif
 };
 
 struct platform_device s3c_device_i2c2 = {
@@ -576,12 +771,19 @@ void __init s3c_i2c2_set_platdata(struct s3c2410_platform_i2c *pd)
 
 	if (!pd) {
 		pd = &default_i2c_data;
+#ifdef CONFIG_SOC_EXYNOS5260
+		pd->bus_num = 6;
+#else
 		pd->bus_num = 2;
+#endif
 	}
 
 	npd = s3c_set_platdata(pd, sizeof(struct s3c2410_platform_i2c),
 			       &s3c_device_i2c2);
-
+	if (!npd) {
+		printk(KERN_ERR "%s: s3c_set_platdata is fail\n", __func__);
+		return;
+	}
 	if (!npd->cfg_gpio)
 		npd->cfg_gpio = s3c_i2c2_cfg_gpio;
 }
@@ -590,7 +792,11 @@ void __init s3c_i2c2_set_platdata(struct s3c2410_platform_i2c *pd)
 #ifdef CONFIG_S3C_DEV_I2C3
 static struct resource s3c_i2c3_resource[] = {
 	[0] = DEFINE_RES_MEM(S3C_PA_IIC3, SZ_4K),
+#ifdef CONFIG_SOC_EXYNOS5260
+	[1] = DEFINE_RES_IRQ(IRQ_IIC7),
+#else
 	[1] = DEFINE_RES_IRQ(IRQ_IIC3),
+#endif
 };
 
 struct platform_device s3c_device_i2c3 = {
@@ -606,12 +812,19 @@ void __init s3c_i2c3_set_platdata(struct s3c2410_platform_i2c *pd)
 
 	if (!pd) {
 		pd = &default_i2c_data;
+#ifdef CONFIG_SOC_EXYNOS5260
+		pd->bus_num = 7;
+#else
 		pd->bus_num = 3;
+#endif
 	}
 
 	npd = s3c_set_platdata(pd, sizeof(struct s3c2410_platform_i2c),
 			       &s3c_device_i2c3);
-
+	if (!npd) {
+		printk(KERN_ERR "%s: s3c_set_platdata is fail\n", __func__);
+		return;
+	}
 	if (!npd->cfg_gpio)
 		npd->cfg_gpio = s3c_i2c3_cfg_gpio;
 }
@@ -620,7 +833,11 @@ void __init s3c_i2c3_set_platdata(struct s3c2410_platform_i2c *pd)
 #ifdef CONFIG_S3C_DEV_I2C4
 static struct resource s3c_i2c4_resource[] = {
 	[0] = DEFINE_RES_MEM(S3C_PA_IIC4, SZ_4K),
+#ifdef CONFIG_SOC_EXYNOS5260
+	[1] = DEFINE_RES_IRQ(IRQ_IIC8),
+#else
 	[1] = DEFINE_RES_IRQ(IRQ_IIC4),
+#endif
 };
 
 struct platform_device s3c_device_i2c4 = {
@@ -636,12 +853,19 @@ void __init s3c_i2c4_set_platdata(struct s3c2410_platform_i2c *pd)
 
 	if (!pd) {
 		pd = &default_i2c_data;
+#ifdef CONFIG_SOC_EXYNOS5260
+		pd->bus_num = 8;
+#else
 		pd->bus_num = 4;
+#endif
 	}
 
 	npd = s3c_set_platdata(pd, sizeof(struct s3c2410_platform_i2c),
 			       &s3c_device_i2c4);
-
+	if (!npd) {
+		printk(KERN_ERR "%s: s3c_set_platdata is fail\n", __func__);
+		return;
+	}
 	if (!npd->cfg_gpio)
 		npd->cfg_gpio = s3c_i2c4_cfg_gpio;
 }
@@ -650,7 +874,11 @@ void __init s3c_i2c4_set_platdata(struct s3c2410_platform_i2c *pd)
 #ifdef CONFIG_S3C_DEV_I2C5
 static struct resource s3c_i2c5_resource[] = {
 	[0] = DEFINE_RES_MEM(S3C_PA_IIC5, SZ_4K),
+#ifdef CONFIG_SOC_EXYNOS5260
+	[1] = DEFINE_RES_IRQ(IRQ_IIC9),
+#else
 	[1] = DEFINE_RES_IRQ(IRQ_IIC5),
+#endif
 };
 
 struct platform_device s3c_device_i2c5 = {
@@ -666,12 +894,19 @@ void __init s3c_i2c5_set_platdata(struct s3c2410_platform_i2c *pd)
 
 	if (!pd) {
 		pd = &default_i2c_data;
+#ifdef CONFIG_SOC_EXYNOS5260
+		pd->bus_num = 9;
+#else
 		pd->bus_num = 5;
+#endif
 	}
 
 	npd = s3c_set_platdata(pd, sizeof(struct s3c2410_platform_i2c),
 			       &s3c_device_i2c5);
-
+	if (!npd) {
+		printk(KERN_ERR "%s: s3c_set_platdata is fail\n", __func__);
+		return;
+	}
 	if (!npd->cfg_gpio)
 		npd->cfg_gpio = s3c_i2c5_cfg_gpio;
 }
@@ -680,7 +915,11 @@ void __init s3c_i2c5_set_platdata(struct s3c2410_platform_i2c *pd)
 #ifdef CONFIG_S3C_DEV_I2C6
 static struct resource s3c_i2c6_resource[] = {
 	[0] = DEFINE_RES_MEM(S3C_PA_IIC6, SZ_4K),
+#ifdef CONFIG_SOC_EXYNOS5260
+	[1] = DEFINE_RES_IRQ(IRQ_IIC10),
+#else
 	[1] = DEFINE_RES_IRQ(IRQ_IIC6),
+#endif
 };
 
 struct platform_device s3c_device_i2c6 = {
@@ -696,12 +935,19 @@ void __init s3c_i2c6_set_platdata(struct s3c2410_platform_i2c *pd)
 
 	if (!pd) {
 		pd = &default_i2c_data;
+#ifdef CONFIG_SOC_EXYNOS5260
+		pd->bus_num = 10;
+#else
 		pd->bus_num = 6;
+#endif
 	}
 
 	npd = s3c_set_platdata(pd, sizeof(struct s3c2410_platform_i2c),
 			       &s3c_device_i2c6);
-
+	if (!npd) {
+		printk(KERN_ERR "%s: s3c_set_platdata is fail\n", __func__);
+		return;
+	}
 	if (!npd->cfg_gpio)
 		npd->cfg_gpio = s3c_i2c6_cfg_gpio;
 }
@@ -710,7 +956,11 @@ void __init s3c_i2c6_set_platdata(struct s3c2410_platform_i2c *pd)
 #ifdef CONFIG_S3C_DEV_I2C7
 static struct resource s3c_i2c7_resource[] = {
 	[0] = DEFINE_RES_MEM(S3C_PA_IIC7, SZ_4K),
+#ifdef CONFIG_SOC_EXYNOS5260
+	[1] = DEFINE_RES_IRQ(IRQ_IIC11),
+#else
 	[1] = DEFINE_RES_IRQ(IRQ_IIC7),
+#endif
 };
 
 struct platform_device s3c_device_i2c7 = {
@@ -726,14 +976,24 @@ void __init s3c_i2c7_set_platdata(struct s3c2410_platform_i2c *pd)
 
 	if (!pd) {
 		pd = &default_i2c_data;
+#ifdef CONFIG_SOC_EXYNOS5260
+		pd->bus_num = 11;
+#else
 		pd->bus_num = 7;
+#endif
 	}
 
 	npd = s3c_set_platdata(pd, sizeof(struct s3c2410_platform_i2c),
 			       &s3c_device_i2c7);
-
+	if (!npd) {
+		printk(KERN_ERR "%s: s3c_set_platdata is fail\n", __func__);
+		return;
+	}
 	if (!npd->cfg_gpio)
 		npd->cfg_gpio = s3c_i2c7_cfg_gpio;
+
+	if (!npd->cfg_mux)
+		npd->cfg_mux = s3c_i2c7_cfg_mux;
 }
 #endif /* CONFIG_S3C_DEV_I2C7 */
 
@@ -746,8 +1006,8 @@ static struct resource s5p_i2c_resource[] = {
 };
 
 struct platform_device s5p_device_i2c_hdmiphy = {
-	.name		= "s3c2440-hdmiphy-i2c",
-	.id		= -1,
+	.name		= "s3c2440-i2c",
+	.id		= 8,
 	.num_resources	= ARRAY_SIZE(s5p_i2c_resource),
 	.resource	= s5p_i2c_resource,
 };
@@ -763,12 +1023,16 @@ void __init s5p_i2c_hdmiphy_set_platdata(struct s3c2410_platform_i2c *pd)
 			pd->bus_num = 8;
 		else if (soc_is_s5pv210())
 			pd->bus_num = 3;
+		else if (soc_is_exynos5250())
+			pd->bus_num = 8;
 		else
 			pd->bus_num = 0;
 	}
 
 	npd = s3c_set_platdata(pd, sizeof(struct s3c2410_platform_i2c),
 			       &s5p_device_i2c_hdmiphy);
+	if (!npd)
+		printk(KERN_ERR "%s: s3c_set_platdata is fail\n", __func__);
 }
 #endif /* CONFIG_S5P_DEV_I2C_HDMIPHY */
 
@@ -807,8 +1071,12 @@ struct platform_device s3c_device_cfcon = {
 
 void __init s3c_ide_set_platdata(struct s3c_ide_platdata *pdata)
 {
-	s3c_set_platdata(pdata, sizeof(struct s3c_ide_platdata),
+	struct s3c_ide_platdata *npd;
+
+	npd = n3c_set_platdata(pdata, sizeof(struct s3c_ide_platdata),
 			 &s3c_device_cfcon);
+	if (!npd)
+		printk(KERN_ERR "%s: s3c_set_platdata is fail\n", __func__);
 }
 #endif /* CONFIG_SAMSUNG_DEV_IDE */
 
@@ -833,7 +1101,10 @@ void __init samsung_keypad_set_platdata(struct samsung_keypad_platdata *pd)
 
 	npd = s3c_set_platdata(pd, sizeof(struct samsung_keypad_platdata),
 			&samsung_device_keypad);
-
+	if (!npd) {
+		printk(KERN_ERR "%s: s3c_set_platdata is fail\n", __func__);
+		return;
+	}
 	if (!npd->cfg_gpio)
 		npd->cfg_gpio = samsung_keypad_cfg_gpio;
 }
@@ -919,36 +1190,6 @@ struct platform_device s5p_device_mfc_r = {
 };
 #endif /* CONFIG_S5P_DEV_MFC */
 
-/* MIPI CSIS */
-
-#ifdef CONFIG_S5P_DEV_CSIS0
-static struct resource s5p_mipi_csis0_resource[] = {
-	[0] = DEFINE_RES_MEM(S5P_PA_MIPI_CSIS0, SZ_16K),
-	[1] = DEFINE_RES_IRQ(IRQ_MIPI_CSIS0),
-};
-
-struct platform_device s5p_device_mipi_csis0 = {
-	.name		= "s5p-mipi-csis",
-	.id		= 0,
-	.num_resources	= ARRAY_SIZE(s5p_mipi_csis0_resource),
-	.resource	= s5p_mipi_csis0_resource,
-};
-#endif /* CONFIG_S5P_DEV_CSIS0 */
-
-#ifdef CONFIG_S5P_DEV_CSIS1
-static struct resource s5p_mipi_csis1_resource[] = {
-	[0] = DEFINE_RES_MEM(S5P_PA_MIPI_CSIS1, SZ_16K),
-	[1] = DEFINE_RES_IRQ(IRQ_MIPI_CSIS1),
-};
-
-struct platform_device s5p_device_mipi_csis1 = {
-	.name		= "s5p-mipi-csis",
-	.id		= 1,
-	.num_resources	= ARRAY_SIZE(s5p_mipi_csis1_resource),
-	.resource	= s5p_mipi_csis1_resource,
-};
-#endif
-
 /* NAND */
 
 #ifdef CONFIG_S3C_DEV_NAND
@@ -1022,8 +1263,10 @@ void __init s3c_nand_set_platdata(struct s3c2410_platform_nand *nand)
 
 	npd = s3c_set_platdata(nand, sizeof(struct s3c2410_platform_nand),
 				&s3c_device_nand);
-	if (!npd)
+	if (!npd) {
+		printk(KERN_ERR "%s: s3c_set_platdata is fail\n", __func__);
 		return;
+	}
 
 	/* now see if we need to copy any of the nand set data */
 
@@ -1087,8 +1330,12 @@ struct platform_device s3c64xx_device_onenand1 = {
 
 void __init s3c64xx_onenand1_set_platdata(struct onenand_platform_data *pdata)
 {
-	s3c_set_platdata(pdata, sizeof(struct onenand_platform_data),
+	struct onenand_platform_data *npd;
+
+	npd = s3c_set_platdata(pdata, sizeof(struct onenand_platform_data),
 			 &s3c64xx_device_onenand1);
+	if (!npd)
+		printk(KERN_ERR "%s: s3c_set_platdata is fail\n", __func__);
 }
 #endif /* CONFIG_S3C64XX_DEV_ONENAND1 */
 
@@ -1111,7 +1358,14 @@ struct platform_device s5p_device_onenand = {
 
 #ifdef CONFIG_PLAT_S5P
 static struct resource s5p_pmu_resource[] = {
-	DEFINE_RES_IRQ(IRQ_PMU)
+	[0] = DEFINE_RES_IRQ(IRQ_PMU),
+#if CONFIG_NR_CPUS > 1
+	[1] = DEFINE_RES_IRQ(IRQ_PMU_CPU1),
+#endif
+#if CONFIG_NR_CPUS > 2
+	[2] = DEFINE_RES_IRQ(IRQ_PMU_CPU2),
+	[3] = DEFINE_RES_IRQ(IRQ_PMU_CPU3),
+#endif
 };
 
 static struct platform_device s5p_device_pmu = {
@@ -1123,7 +1377,14 @@ static struct platform_device s5p_device_pmu = {
 
 static int __init s5p_pmu_init(void)
 {
-	platform_device_register(&s5p_device_pmu);
+	int ret;
+
+	ret = platform_device_register(&s5p_device_pmu);
+	if (ret) {
+		pr_warning("s5p_pmu_init: pmu device not registered.\n");
+		return ret;
+	}
+
 	return 0;
 }
 arch_initcall(s5p_pmu_init);
@@ -1162,6 +1423,25 @@ struct platform_device s3c_device_timer[] = {
 	[3] = { DEFINE_S3C_TIMER(3, IRQ_TIMER3) },
 	[4] = { DEFINE_S3C_TIMER(4, IRQ_TIMER4) },
 };
+
+void __init samsung_pwm_set_platdata(struct samsung_pwm_platdata *pd)
+{
+	int i;
+	struct samsung_pwm_platdata *npd;
+
+	BUG_ON(!pd);
+
+	/*
+	 * Each 5 PWM Timers have own platform_device, but
+	 * only one platform_data is valid for all of PWMs
+	 */
+	for (i = 0 ; i < 5; i++) {
+		npd = s3c_set_platdata(pd, sizeof(struct samsung_pwm_platdata),
+				&s3c_device_timer[i]);
+		if (!npd)
+			printk(KERN_ERR "%s: s3c_set_platdata is fail\n", __func__);
+	}
+}
 #endif /* CONFIG_SAMSUNG_DEV_PWM */
 
 /* RTC */
@@ -1213,8 +1493,12 @@ struct platform_device s3c_device_sdi = {
 
 void __init s3c24xx_mci_set_platdata(struct s3c24xx_mci_pdata *pdata)
 {
-	s3c_set_platdata(pdata, sizeof(struct s3c24xx_mci_pdata),
+	struct s3c24xx_mci_pdata *npd;
+
+	npd = s3c_set_platdata(pdata, sizeof(struct s3c24xx_mci_pdata),
 			 &s3c_device_sdi);
+	if (!npd)
+		printk(KERN_ERR "%s: s3c_set_platdata is fail\n", __func__);
 }
 #endif /* CONFIG_PLAT_S3C24XX */
 
@@ -1272,8 +1556,12 @@ struct platform_device s3c_device_ts = {
 
 void __init s3c24xx_ts_set_platdata(struct s3c2410_ts_mach_info *hard_s3c2410ts_info)
 {
-	s3c_set_platdata(hard_s3c2410ts_info,
+	struct s3c2410_ts_mach_info *npd;
+
+	npd = s3c_set_platdata(hard_s3c2410ts_info,
 			 sizeof(struct s3c2410_ts_mach_info), &s3c_device_ts);
+	if (!npd)
+		printk(KERN_ERR "%s: s3c_set_platdata is fail\n", __func__);
 }
 #endif /* CONFIG_PLAT_S3C24XX */
 
@@ -1298,11 +1586,15 @@ struct platform_device s3c_device_ts = {
 
 void __init s3c24xx_ts_set_platdata(struct s3c2410_ts_mach_info *pd)
 {
+	struct s3c2410_ts_mach_info *npd;
+
 	if (!pd)
 		pd = &default_ts_data;
 
-	s3c_set_platdata(pd, sizeof(struct s3c2410_ts_mach_info),
+	npd = s3c_set_platdata(pd, sizeof(struct s3c2410_ts_mach_info),
 			 &s3c_device_ts);
+	if (!npd)
+		printk(KERN_ERR "%s: s3c_set_platdata is fail\n", __func__);
 }
 #endif /* CONFIG_SAMSUNG_DEV_TS */
 
@@ -1311,8 +1603,10 @@ void __init s3c24xx_ts_set_platdata(struct s3c2410_ts_mach_info *pd)
 #ifdef CONFIG_S5P_DEV_TV
 
 static struct resource s5p_hdmi_resources[] = {
-	[0] = DEFINE_RES_MEM(S5P_PA_HDMI, SZ_1M),
-	[1] = DEFINE_RES_IRQ(IRQ_HDMI),
+	[0] = DEFINE_RES_MEM(S5P_PA_HDMI, SZ_512K),
+	[1] = DEFINE_RES_IRQ(IRQ_TVOUT_EXT_HPD),
+	[2] = DEFINE_RES_IRQ(IRQ_HDMI),
+	[3] = DEFINE_RES_MEM(S5P_PA_HDMIPHY, SZ_32K),
 };
 
 struct platform_device s5p_device_hdmi = {
@@ -1322,21 +1616,26 @@ struct platform_device s5p_device_hdmi = {
 	.resource	= s5p_hdmi_resources,
 };
 
-static struct resource s5p_sdo_resources[] = {
-	[0] = DEFINE_RES_MEM(S5P_PA_SDO, SZ_64K),
-	[1] = DEFINE_RES_IRQ(IRQ_SDO),
-};
+void __init s5p_hdmi_set_platdata(struct s5p_hdmi_platdata *pd)
+{
+	struct s5p_hdmi_platdata *npd;
 
-struct platform_device s5p_device_sdo = {
-	.name		= "s5p-sdo",
-	.id		= -1,
-	.num_resources	= ARRAY_SIZE(s5p_sdo_resources),
-	.resource	= s5p_sdo_resources,
-};
+	npd = s3c_set_platdata(pd, sizeof(struct
+				s5p_hdmi_platdata),
+			&s5p_device_hdmi);
+	if (!npd) {
+		printk(KERN_ERR "%s: s3c_set_platdata is fail\n", __func__);
+		return;
+	}
+	if (!npd->hdmiphy_enable)
+		npd->hdmiphy_enable = s5p_hdmiphy_enable;
+}
 
 static struct resource s5p_mixer_resources[] = {
 	[0] = DEFINE_RES_MEM_NAMED(S5P_PA_MIXER, SZ_64K, "mxr"),
+#if defined(CONFIG_ARCH_EXYNOS4)
 	[1] = DEFINE_RES_MEM_NAMED(S5P_PA_VP, SZ_64K, "vp"),
+#endif
 	[2] = DEFINE_RES_IRQ_NAMED(IRQ_MIXER, "irq"),
 };
 
@@ -1350,6 +1649,34 @@ struct platform_device s5p_device_mixer = {
 		.coherent_dma_mask	= DMA_BIT_MASK(32),
 	}
 };
+
+static struct resource s5p_cec_resources[] = {
+	[0] = DEFINE_RES_MEM_NAMED(S5P_PA_HDMI_CEC, SZ_64K, "cec"),
+	[1] = DEFINE_RES_IRQ_NAMED(IRQ_CEC, "irq"),
+};
+
+struct platform_device s5p_device_cec = {
+	.name           = "s5p-tvout-cec",
+	.id             = -1,
+	.num_resources  = ARRAY_SIZE(s5p_cec_resources),
+	.resource       = s5p_cec_resources,
+};
+
+void __init s5p_hdmi_cec_set_platdata(struct s5p_platform_cec *pd)
+{
+	struct s5p_platform_cec *npd;
+
+	npd = kmemdup(pd, sizeof(struct s5p_platform_cec), GFP_KERNEL);
+	if (!npd)
+		printk(KERN_ERR "%s: no memory for platform data\n",
+				__func__);
+	else {
+		if (!npd->cfg_gpio)
+			npd->cfg_gpio = s5p_cec_cfg_gpio;
+		s5p_device_cec.dev.platform_data = npd;
+	}
+}
+
 #endif /* CONFIG_S5P_DEV_TV */
 
 /* USB */
@@ -1382,8 +1709,12 @@ struct platform_device s3c_device_ohci = {
 
 void __init s3c_ohci_set_platdata(struct s3c2410_hcd_info *info)
 {
-	s3c_set_platdata(info, sizeof(struct s3c2410_hcd_info),
+	struct s3c2410_hcd_info *npd;
+
+	npd = s3c_set_platdata(info, sizeof(struct s3c2410_hcd_info),
 			 &s3c_device_ohci);
+	if (!npd)
+		printk(KERN_ERR "%s: s3c_set_platdata is fail\n", __func__);
 }
 #endif /* CONFIG_S3C_DEV_USB_HOST */
 
@@ -1404,7 +1735,11 @@ struct platform_device s3c_device_usbgadget = {
 
 void __init s3c24xx_udc_set_platdata(struct s3c2410_udc_mach_info *pd)
 {
-	s3c_set_platdata(pd, sizeof(*pd), &s3c_device_usbgadget);
+	struct s3c2410_udc_mach_info *npd;
+
+	npd = s3c_set_platdata(pd, sizeof(*pd), &s3c_device_usbgadget);
+	if (!npd)
+		printk(KERN_ERR "%s: s3c_set_platdata is fail\n", __func__);
 }
 #endif /* CONFIG_PLAT_S3C24XX */
 
@@ -1433,11 +1768,18 @@ void __init s5p_ehci_set_platdata(struct s5p_ehci_platdata *pd)
 
 	npd = s3c_set_platdata(pd, sizeof(struct s5p_ehci_platdata),
 			&s5p_device_ehci);
-
+	if(!npd) {
+		printk(KERN_ERR "%s: s3c_set_platdata is fail\n", __func__);
+		return;
+	}
 	if (!npd->phy_init)
 		npd->phy_init = s5p_usb_phy_init;
 	if (!npd->phy_exit)
 		npd->phy_exit = s5p_usb_phy_exit;
+	if (!npd->phy_suspend)
+		npd->phy_suspend = s5p_usb_phy_suspend;
+	if (!npd->phy_resume)
+		npd->phy_resume = s5p_usb_phy_resume;
 }
 #endif /* CONFIG_S5P_DEV_USB_EHCI */
 
@@ -1466,11 +1808,32 @@ void __init s3c_hsotg_set_platdata(struct s3c_hsotg_plat *pd)
 
 	npd = s3c_set_platdata(pd, sizeof(struct s3c_hsotg_plat),
 			&s3c_device_usb_hsotg);
-
+	if (!npd) {
+		printk(KERN_ERR "%s: s3c_set_platdata is fail\n", __func__);
+		return;
+	}
 	if (!npd->phy_init)
 		npd->phy_init = s5p_usb_phy_init;
 	if (!npd->phy_exit)
 		npd->phy_exit = s5p_usb_phy_exit;
+
+#ifdef CONFIG_MACH_KMINI
+	/* Sqrxtune [13:11] 5b101 : -10% */
+	npd->phy_tune_mask |= (0x7 << 11);
+	npd->phy_tune |= (0x5 << 11);
+
+	/* Txvreftune [ 3: 0] 9b1001 : +12% */
+	npd->phy_tune_mask |= (0xf);
+	npd->phy_tune |= (0x9);
+#else
+	/* Sqrxtune [13:11] 6b110 : -15% */
+	npd->phy_tune_mask |= (0x7 << 11);
+	npd->phy_tune |= (0x6 << 11);
+
+	/* Txvreftune [ 3: 0] 9b1001 : +12% */
+	npd->phy_tune_mask |= (0xf);
+	npd->phy_tune |= (0x9);
+#endif
 }
 #endif /* CONFIG_S3C_DEV_USB_HSOTG */
 
@@ -1495,7 +1858,11 @@ struct platform_device s3c_device_usb_hsudc = {
 
 void __init s3c24xx_hsudc_set_platdata(struct s3c24xx_hsudc_platdata *pd)
 {
-	s3c_set_platdata(pd, sizeof(*pd), &s3c_device_usb_hsudc);
+	struct s3c24xx_hsudc_platdata *npd;
+
+	npd = s3c_set_platdata(pd, sizeof(*pd), &s3c_device_usb_hsudc);
+	if (!npd)
+		printk(KERN_ERR "%s: s3c_set_platdata is fail\n", __func__);
 }
 #endif /* CONFIG_PLAT_S3C24XX */
 
@@ -1513,6 +1880,15 @@ struct platform_device s3c_device_wdt = {
 	.num_resources	= ARRAY_SIZE(s3c_wdt_resource),
 	.resource	= s3c_wdt_resource,
 };
+
+void __init s3c_watchdog_set_platdata(struct s3c_watchdog_platdata *pd)
+{
+	struct s3c_watchdog_platdata *npd;
+
+	npd = s3c_set_platdata(pd, sizeof(*pd), &s3c_device_wdt);
+	if (!npd)
+		printk(KERN_ERR "%s: s3c_set_platdata is fail\n", __func__);
+}
 #endif /* CONFIG_S3C_DEV_WDT */
 
 #ifdef CONFIG_S3C64XX_DEV_SPI0
@@ -1537,6 +1913,8 @@ struct platform_device s3c64xx_device_spi0 = {
 void __init s3c64xx_spi0_set_platdata(struct s3c64xx_spi_info *pd,
 				      int src_clk_nr, int num_cs)
 {
+	struct s3c64xx_spi_info *npd;
+
 	if (!pd) {
 		pr_err("%s:Need to pass platform data\n", __func__);
 		return;
@@ -1553,7 +1931,12 @@ void __init s3c64xx_spi0_set_platdata(struct s3c64xx_spi_info *pd,
 	if (!pd->cfg_gpio)
 		pd->cfg_gpio = s3c64xx_spi0_cfg_gpio;
 
-	s3c_set_platdata(pd, sizeof(*pd), &s3c64xx_device_spi0);
+	if (pd->dma_mode != PIO_MODE)
+		pd->dma_mode = HYBRID_MODE;
+
+	npd = s3c_set_platdata(pd, sizeof(*pd), &s3c64xx_device_spi0);
+	if (!npd)
+		printk(KERN_ERR "%s: s3c_set_platdata is fail\n", __func__);
 }
 #endif /* CONFIG_S3C64XX_DEV_SPI0 */
 
@@ -1579,6 +1962,8 @@ struct platform_device s3c64xx_device_spi1 = {
 void __init s3c64xx_spi1_set_platdata(struct s3c64xx_spi_info *pd,
 				      int src_clk_nr, int num_cs)
 {
+	struct s3c64xx_spi_info *npd;
+
 	if (!pd) {
 		pr_err("%s:Need to pass platform data\n", __func__);
 		return;
@@ -1595,7 +1980,12 @@ void __init s3c64xx_spi1_set_platdata(struct s3c64xx_spi_info *pd,
 	if (!pd->cfg_gpio)
 		pd->cfg_gpio = s3c64xx_spi1_cfg_gpio;
 
-	s3c_set_platdata(pd, sizeof(*pd), &s3c64xx_device_spi1);
+	if (pd->dma_mode != PIO_MODE)
+		pd->dma_mode = HYBRID_MODE;
+
+	npd = s3c_set_platdata(pd, sizeof(*pd), &s3c64xx_device_spi1);
+	if (!npd)
+		printk(KERN_ERR "%s: s3c_set_platdata is fail\n", __func__);
 }
 #endif /* CONFIG_S3C64XX_DEV_SPI1 */
 
@@ -1621,6 +2011,8 @@ struct platform_device s3c64xx_device_spi2 = {
 void __init s3c64xx_spi2_set_platdata(struct s3c64xx_spi_info *pd,
 				      int src_clk_nr, int num_cs)
 {
+	struct s3c64xx_spi_info *npd;
+
 	if (!pd) {
 		pr_err("%s:Need to pass platform data\n", __func__);
 		return;
@@ -1637,6 +2029,93 @@ void __init s3c64xx_spi2_set_platdata(struct s3c64xx_spi_info *pd,
 	if (!pd->cfg_gpio)
 		pd->cfg_gpio = s3c64xx_spi2_cfg_gpio;
 
-	s3c_set_platdata(pd, sizeof(*pd), &s3c64xx_device_spi2);
+	if (pd->dma_mode != PIO_MODE)
+		pd->dma_mode = HYBRID_MODE;
+
+	npd = s3c_set_platdata(pd, sizeof(*pd), &s3c64xx_device_spi2);
+	if (!npd)
+		printk(KERN_ERR "%s: s3c_set_platdata is fail\n", __func__);
 }
 #endif /* CONFIG_S3C64XX_DEV_SPI2 */
+
+#ifdef CONFIG_S3C64XX_DEV_SPI3
+static struct resource s3c64xx_spi3_resource[] = {
+	[0] = DEFINE_RES_MEM(S3C_PA_SPI3, SZ_256),
+	/* Todo : add irq resource -> [3] = DEFINE_RES_IRQ(IRQ_SPIx) */
+};
+
+struct platform_device s3c64xx_device_spi3 = {
+	.name		= "s3c64xx-spi",
+	.id		= 3,
+	.num_resources	= ARRAY_SIZE(s3c64xx_spi3_resource),
+	.resource	= s3c64xx_spi3_resource,
+};
+
+void __init s3c64xx_spi3_set_platdata(struct s3c64xx_spi_info *pd,
+				      int src_clk_nr, int num_cs)
+{
+	struct s3c64xx_spi_info *npd;
+
+	if (!pd) {
+		pr_err("%s:Need to pass platform data\n", __func__);
+		return;
+	}
+
+	/* Reject invalid configuration */
+	if (!num_cs || src_clk_nr < 0) {
+		pr_err("%s: Invalid SPI configuration\n", __func__);
+		return;
+	}
+
+	pd->num_cs = num_cs;
+	pd->src_clk_nr = src_clk_nr;
+	if (!pd->cfg_gpio)
+		pd->cfg_gpio = s3c64xx_spi3_cfg_gpio;
+
+	if (pd->dma_mode != PIO_MODE)
+		pd->dma_mode = HYBRID_MODE;
+
+	npd = s3c_set_platdata(pd, sizeof(*pd), &s3c64xx_device_spi3);
+	if (!npd)
+		printk(KERN_ERR "%s: s3c_set_platdata is fail\n", __func__);
+}
+#endif /* CONFIG_S3C64XX_DEV_SPI3 */
+
+#ifdef CONFIG_MALI_T6XX
+static struct resource g3d_resource[] = {
+	[0] = DEFINE_RES_MEM(EXYNOS5_PA_G3D, (SZ_4K * 5)),
+	[1] = DEFINE_RES_IRQ(JOB_IRQ_NUMBER),
+	[2] = DEFINE_RES_IRQ(MMU_IRQ_NUMBER),
+	[3] = DEFINE_RES_IRQ(GPU_IRQ_NUMBER),
+};
+
+struct platform_device exynos5_device_g3d = {
+	.name	= "mali",
+	.id		= 0,
+	.num_resources	= ARRAY_SIZE(g3d_resource),
+	.resource	= g3d_resource,
+	.dev = {
+		.dma_mask	= &samsung_device_dma_mask,
+		.coherent_dma_mask	= DMA_BIT_MASK(32),
+	},
+};
+#endif /*CONFIG_MALI_T6XX*/
+struct platform_device exynos4_device_g3d = {
+	.name	= "mali_dev",
+	.id		= 0,
+	.dev = {
+		.dma_mask		= &samsung_device_dma_mask,
+		.coherent_dma_mask	= DMA_BIT_MASK(32),
+	},
+};
+
+#ifdef CONFIG_PVR_SGX
+struct platform_device exynos5_device_g3d = {
+	.name   = "pvrsrvkm",
+	.id     = 0,
+	.dev    = {
+		.dma_mask =&samsung_device_dma_mask,
+		.coherent_dma_mask = DMA_BIT_MASK(32),
+	},
+};
+#endif /* CONFIG_PVR_SGX */

@@ -18,3 +18,21 @@ config CPU_IDLE_GOV_MENU
 	bool
 	depends on CPU_IDLE && NO_HZ
 	default y
+
+config ARCH_NEEDS_CPU_IDLE_COUPLED
+	def_bool n
+
+config EXYNOS_CPUIDLE_C2
+	bool "EXYNOS CPUIDLE C2"
+	depends on CPU_IDLE
+	default y
+	help
+	  Enable C2 state on cpuidle
+
+config EXYNOS_IDLE_CLK_DOWN
+	bool "Exynos clock down feature"
+	depends on SOC_EXYNOS3470 || SOC_EXYNOS3250
+	depends on CPU_IDLE
+	default y
+	help
+	 Enable Clock down feature

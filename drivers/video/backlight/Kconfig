@@ -125,6 +125,116 @@ config LCD_AMS369FG06
 	  If you have an AMS369FG06 AMOLED Panel, say Y to enable its
 	  LCD control driver.
 
+config LCD_MIPI_S6E8AB0
+	tristate "1280 X 800 S6E8AB0 AMOLED MIPI LCD Driver"
+	depends on BACKLIGHT_CLASS_DEVICE
+	default n
+	help
+	  If you have an S6E8AB0 MIPI LCD Panel, say Y to enable its
+	  LCD control driver.
+
+config LCD_MIPI_S6D7AA0
+	tristate "1280 X 800 S6E8AB0 AMOLED MIPI LCD Driver"
+	depends on BACKLIGHT_CLASS_DEVICE
+	default n
+	help
+	  If you have an S6D7AA0 MIPI LCD Panel, say Y to enable its
+	  LCD control driver.
+
+config LCD_MIPI_TC358764
+        tristate "1280 X 800 TC358764 AMOLED MIPI LCD Driver"
+        depends on BACKLIGHT_CLASS_DEVICE
+        default n
+        help
+          If you have an TC358764 MIPI LCD Panel, say Y to enable its
+          LCD control driver.
+
+config LCD_MIPI_S6E8AA0
+	tristate "800 X 1280 S6E8AA0 AMOLED LCD Driver"
+	depends on BACKLIGHT_CLASS_DEVICE
+	default n
+	help
+	  If you have an LCD_MIPI_S6E8AA0 MIPI LCD Panel, say Y to enable its
+	  LCD control driver.
+
+config LCD_MIPI_D6EA8061
+	tristate "720 X 1280 D6EA8061 AMOLED LCD Driver"
+	depends on BACKLIGHT_CLASS_DEVICE
+	default n
+	help
+	  If you have an LCD_MIPI_D6EA8061 MIPI LCD Panel, say Y to enable its
+	  LCD control driver.
+
+config LCD_MIPI_S6E3FA0
+	tristate "1080 X 1920 S6E3FA0 AMOLED LCD Driver"
+	depends on BACKLIGHT_CLASS_DEVICE
+	default n
+	help
+	  If you have an LCD_MIPI_S6E3FA0 MIPI LCD Panel, say Y to enable its
+	  LCD control driver.
+
+config LCD_MIPI_AMS480GYXX
+	tristate "720 X 1080 AMS480GYXX AMOLED LCD Driver"
+	depends on BACKLIGHT_CLASS_DEVICE
+	default n
+	help
+	  If you have an LCD_MIPI_AMS480GYXX MIPI LCD Panel, say Y to enable its
+
+config LCD_MIPI_S6E8AA4
+	tristate "720 X 1280 S6E8AA4 AMOLED LCD Driver"
+	depends on BACKLIGHT_CLASS_DEVICE
+	default n
+	help
+	  If you have an LCD_MIPI_S6E8AA4 MIPI LCD Panel, say Y to enable its
+
+config LCD_MIPI_EA8061V
+	tristate "720 X 1280 EA8061V AMOLED LCD Driver"
+	depends on BACKLIGHT_CLASS_DEVICE
+	default n
+	help
+	  If you have an LCD_MIPI_EA8061V MIPI LCD Panel, say Y to enable its
+
+config LCD_MIPI_NT35510
+	tristate "480 X 800 NT35510 LCD Driver"
+	depends on BACKLIGHT_CLASS_DEVICE
+	default n
+	help
+	  If you have an LCD_MIPI_NT35510 MIPI LCD Panel, say Y to enable its
+	  LCD control driver.
+
+if LCD_MIPI_NT35510
+choice
+	prompt "Select Board Revison for NT35510 LCD"
+
+config ESPRESSO_REV0_0
+	bool "Espresso Rev0.0"
+	help
+	  If you are using ESPRESSO REV0.0 board, Say Y to enable NT35510 LCD.
+
+config ESPRESSO_REV0_1
+	bool "Espresso Rev0.1"
+	help
+	  If you are using ESPRESSO REV0.1 board, Say Y to enable NT35510 LCD.
+
+endchoice
+endif
+
+
+config LCD_LMS501KF03
+	tristate "480 X 800  LMS501KF03 TFT LCD Driver(RGB I/F)"
+	default n
+	help
+	  If you have an LMS501KF03 AMOLED Panel, say Y to enable its
+	  LCD control driver.
+
+config LCD_MIPI_S6E63J0X03
+	tristate "320 X 320 S6E63J0X03 OLED LCD Driver"
+	depends on BACKLIGHT_CLASS_DEVICE
+	default n
+	help
+	  If you have a S6E63J0X03 Panel, say Y to enable its
+	  LCD control driver.
+
 endif # LCD_CLASS_DEVICE
 
 #

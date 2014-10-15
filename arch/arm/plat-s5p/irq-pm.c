@@ -42,7 +42,7 @@ int s3c_irq_wake(struct irq_data *data, unsigned int state)
 	unsigned int irq_rtc_tic, irq_rtc_alarm;
 
 #ifdef CONFIG_ARCH_EXYNOS
-	if (soc_is_exynos5250()) {
+	if (soc_is_exynos5250() || soc_is_exynos5410() || soc_is_exynos5420()) {
 		irq_rtc_tic = EXYNOS5_IRQ_RTC_TIC;
 		irq_rtc_alarm = EXYNOS5_IRQ_RTC_ALARM;
 	} else {
@@ -61,6 +61,24 @@ int s3c_irq_wake(struct irq_data *data, unsigned int state)
 			s3c_irqwake_intmask |= irqbit;
 		else
 			s3c_irqwake_intmask &= ~irqbit;
+	} else if (soc_is_exynos3470()) {
+#ifdef CONFIG_SOC_EXYNOS3470
+		switch (data->irq) {
+		case EXYNOS4_IRQ_MCU_IPC:
+			irqbit = 1 << 24;
+			break;
+		case EXYNOS3470_IRQ_CP_WDT:
+			irqbit = 1 << 20;
+			break;
+		default:
+			return -ENOENT;
+		}
+
+		if (!state)
+			s3c_irqwake_intmask |= irqbit;
+		else
+			s3c_irqwake_intmask &= ~irqbit;
+#endif
 	} else {
 		return -ENOENT;
 	}

@@ -25,6 +25,30 @@ config W1_CON
 	  2. Userspace commands. Includes read/write and search/alarm search commands.
 	  3. Replies to userspace commands.
 
+config W1_KTHREAD
+	bool "Using kthread for checking w1 slave"
+	default n
+	help
+	  This allows to start the kthread when w1 master is looking for slaves.
+
+config W1_WORKQUEUE
+	bool "Using workqueue for checking w1 slave"
+	default n
+	help
+	  This allows to start the kthread when w1 master is looking for slaves.
+
+config W1_CF
+	bool "Using cmd for find node"
+	default n
+	help
+	  This allows to check the node.
+
+config W1_FAST_CHECK
+	bool "Using fast check for slave"
+	default n
+	help
+	  This allows to enable fast checking slave
+
 source drivers/w1/masters/Kconfig
 source drivers/w1/slaves/Kconfig
 

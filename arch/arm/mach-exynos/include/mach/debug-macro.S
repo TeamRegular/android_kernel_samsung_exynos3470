@@ -21,11 +21,18 @@
 	 */
 
 	.macro addruart, rp, rv, tmp
+#if defined(CONFIG_ARCH_EXYNOS5)
 		mrc	p15, 0, \tmp, c0, c0, 0
 		and	\tmp, \tmp, #0xf0
 		teq	\tmp, #0xf0		@@ A15
+		teqne	\tmp, #0x70		@@ A7
 		ldreq	\rp, =EXYNOS5_PA_UART
 		movne	\rp, #EXYNOS4_PA_UART	@@ EXYNOS4
+#elif defined(CONFIG_ARCH_EXYNOS4)
+		ldr	\rp, =EXYNOS4_PA_UART
+#elif defined(CONFIG_ARCH_EXYNOS3)
+		ldr	\rp, =EXYNOS3_PA_UART
+#endif
 		ldr	\rv, =S3C_VA_UART
 #if CONFIG_DEBUG_S3C_UART != 0
 		add	\rp, \rp, #(0x10000 * CONFIG_DEBUG_S3C_UART)

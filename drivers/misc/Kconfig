@@ -382,6 +382,14 @@ config HMC6352
 	  This driver provides support for the Honeywell HMC6352 compass,
 	  providing configuration and heading data via sysfs.
 
+config SENSORS_AK8975
+	tristate "AK8975 compass support"
+	default n
+	depends on I2C
+	help
+	  If you say yes here you get support for Asahi Kasei's
+	  orientation sensor AK8975.
+
 config EP93XX_PWM
 	tristate "EP93xx PWM support"
 	depends on ARCH_EP93XX
@@ -424,6 +432,10 @@ config TI_DAC7512
 
 	  This driver can also be built as a module. If so, the module
 	  will be called ti_dac7512.
+
+config UID_STAT
+	bool "UID based statistics tracking exported to /proc/uid_stat"
+	default n
 
 config VMWARE_BALLOON
 	tristate "VMware Balloon Driver"
@@ -481,6 +493,27 @@ config PCH_PHUB
 	  To compile this driver as a module, choose M here: the module will
 	  be called pch_phub.
 
+config SAMSUNG_MUIC
+	bool "Using samsung MUIC chip driver"
+	default n
+	help
+	  If you say yes here you will get support for the MUIC chip.
+
+config MUIC_I2C_USE_S3C_DEV_I2C6
+	bool "MUIC using H/W I2C-6"
+	depends on I2C && SAMSUNG_MUIC
+	default n
+	help
+	  Say yes here When MUIC using H/W I2C pin number 6.
+
+config MUIC_I2C_USE_I2C17_EMUL
+	bool "MUIC using Emulated I2C-17"
+	depends on I2C && SAMSUNG_MUIC
+	default n
+	help
+	  When MUIC doesn't using H/W I2C pin, MUIC must using Emulated
+	  I2C number 17.
+
 config USB_SWITCH_FSA9480
 	tristate "FSA9480 USB Switch"
 	depends on I2C
@@ -490,6 +523,85 @@ config USB_SWITCH_FSA9480
 	  stereo and mono audio, video, microphone and UART data to use
 	  a common connector port.
 
+config MUIC_TSU6721
+	bool "TSU6721 MUIC"
+	depends on I2C && SAMSUNG_MUIC
+	default n
+	help
+	  The TSU6721 is a USB port accessory detector and switch.
+	  The TSU6721 is fully controlled using I2C and enables USB data,
+	  stereo and mono audio, video, microphone and UART data to use
+	  a common connector port.
+
+config MUIC_TSU6721_200K_USB
+	bool "TSU6721_MUIC_200K_USB"
+	depends on MUIC_TSU6721
+	default n
+	help
+	  When a device with ID resistor is attached to TSU6721, The MUIC
+	  doesn't know if it is attached to a charger or a USB cable.
+	  When 219k USB is attached, MUIC thinks it is 200k ohm which belongs
+	  to Type1 Charger and set it as a charger. With this FLAG ON, MUIC
+	  handles 200k ohm device as USB not charger
+
+config MUIC_SM5502
+	bool "SM5502 MUIC"
+	depends on I2C && SAMSUNG_MUIC
+	default n
+	help
+	  The SM5502 is a USB port accessory detector and switch.
+	  The SM5502 is fully controlled using I2C and enables USB data,
+	  stereo and mono audio, video, microphone and UART data to use
+	  a common connector port.
+
+config MUIC_SM5502_200K_USB
+	bool "SM5502_MUIC_200K_USB"
+	depends on MUIC_SM5502
+	default n
+	help
+	  When a device with ID resistor is attached to SM5502, The MUIC 
+	  doesn't know if it is attached to a charger or a USB cable. 
+	  When 219k USB is attached, MUIC thinks it is 200k ohm which belongs
+	  to Type1 Charger and set it as a charger. With this FLAG ON, MUIC
+	  handles 200k ohm device as USB not charger.
+	  
+config MUIC_SM5502_ENABLE_AUTOSW
+	bool "SM5502_MUIC_ENABLE_AUTOSW"
+	depends on MUIC_SM5502
+	default n
+	help
+          If you say yes here, Auto Switch mode in MUIC is turned on and
+	  the device will turn off when JIG cable is detached. If the device
+	  has an internal battery, this config must be turned on.
+
+config MUIC_SM5502_SUPPORT_OTG
+	bool "SM5502_MUIC_SUPPORT_OTG"
+	depends on MUIC_SM5502
+	default n
+	help
+          If you say yes here you will get support for OTG USB 
+
+config MUIC_SM5502_SUPPORT_LANHUB
+	bool "SM5502_MUIC_SUPPORT_LANHUB"
+	depends on MUIC_SM5502_SUPPORT_OTG && MUIC_SM5502_ENABLE_AUTOSW
+	default n
+	help
+          If you say yes here you will get support for Lan Hub 
+
+config MUIC_SM5502_SUPPORT_AUDIODOCK
+	bool "SM5502_MUIC_SUPPORT_AUDIODOCK"
+	depends on MUIC_SM5502
+	default n
+	help
+          If you say yes here you will get support for AUDIO DOCK
+
+config MUIC_SM5502_SUPPORT_DESKDOCK
+	bool "SM5502_MUIC_SUPPORT_DESKDOCK"
+	depends on MUIC_SM5502
+	default n
+	help
+          If you say yes here you will get support for DESKTOP DOCK
+
 config MAX8997_MUIC
 	tristate "MAX8997 MUIC Support"
 	depends on MFD_MAX8997
@@ -498,6 +610,50 @@ config MAX8997_MUIC
 	  Maxim MAX8997 PMIC.
 	  The MAX8997 MUIC is a USB port accessory detector and switch.
 
+config MUIC_MAX77803_SUPPORT_OTG_AUDIO_DOCK
+    bool "MUIC_MAX77803_SUPPORT_OTG_AUDIO_DOCK"
+    depends on MFD_MAX77803
+    default n
+    help
+      If you say yes here you will get support for the OTG audio dock.
+ 
+config MUIC_MAX77803_SUPPORT_SMART_DOCK
+    bool "MUIC_MAX77803_SUPPORT_SMART_DOCK"
+    depends on MFD_MAX77803
+    default n
+    help
+      If you say yes here you will get support for the smart dock.
+ 
+config MUIC_MAX77803_SUPPORT_CAR_DOCK
+    bool "MUIC_MAX77803_SUPPORT_CAR_DOCK"
+    depends on MFD_MAX77803
+    default n
+    help
+      If you say yes here you will get support for the car dock.
+ 
+config MUIC_MAX77803_SUPPORT_MHL_CABLE_DETECTION
+    bool "MUIC_MAX77803_SUPPORT_MHL_CABLE_DETECTION"
+    depends on MFD_MAX77803
+    default n
+    help
+      If you say yes here you will get support for the MHL cable
+      detection.
+
+config WL127X_RFKILL
+	tristate "Bluetooth power control driver for TI wl127x"
+	depends on RFKILL
+	default n
+	---help---
+	 Creates an rfkill entry in sysfs for power control of Bluetooth
+	 TI wl127x chips.
+
+config TIMA_LOG
+	tristate "Support for dumping TIMA log"
+	depends on TIMA
+	default y
+	help
+	  This option enables support for dumping TIMA log.
+	 
 source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"
 source "drivers/misc/cb710/Kconfig"
@@ -506,4 +662,8 @@ source "drivers/misc/ti-st/Kconfig"
 source "drivers/misc/lis3lv02d/Kconfig"
 source "drivers/misc/carma/Kconfig"
 source "drivers/misc/altera-stapl/Kconfig"
+source "drivers/misc/mcu_ipc/Kconfig"
+source "drivers/misc/modem_v1/Kconfig"
+source "drivers/misc/modem_v2/Kconfig"
+source "drivers/misc/modem_if/Kconfig"
 endmenu

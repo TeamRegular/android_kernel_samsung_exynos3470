@@ -23,6 +23,12 @@ source "drivers/gpu/drm/Kconfig"
 
 source "drivers/gpu/stub/Kconfig"
 
+source "drivers/gpu/ion/Kconfig"
+
+source "drivers/gpu/arm/Kconfig"
+
+source "drivers/gpu/pvr/Kconfig"
+
 config VGASTATE
        tristate
        default n
@@ -1173,7 +1179,6 @@ config FB_I810_GTF
 
           If you say N, the driver will revert to discrete video timings 
 	  using a set recommended by Intel in their documentation.
-  
           If unsure, say N.
 
 config FB_I810_I2C
@@ -2037,7 +2042,7 @@ config FB_TMIO_ACCELL
 
 config FB_S3C
 	tristate "Samsung S3C framebuffer support"
-	depends on FB && (S3C_DEV_FB || S5P_DEV_FIMD0)
+	depends on FB && (S3C_DEV_FB || S5P_DEV_FIMD0 || S5P_DEV_FIMD1)
 	select FB_CFB_FILLRECT
 	select FB_CFB_COPYAREA
 	select FB_CFB_IMAGEBLIT
@@ -2053,11 +2058,73 @@ config FB_S3C
 
 	  Currently the support is only for the S3C6400 and S3C6410 SoCs.
 
+config FB_MIPI_DSIM
+	bool "Samsung MIPI DSIM"
+	depends on FB_S3C
+	default n
+	---help---
+	  This enables support for Samsung MIPI DSIM feature
+
+config FB_I80_COMMAND_MODE
+	bool "Samsung MIPI COMMAND MODE(I80 I/F)"
+	depends on FB_S3C && FB_MIPI_DSIM
+	default n
+	---help---
+	  This enables support for Samsung MIPI DSIM Command mode feature
+
+source "drivers/video/decon_display/Kconfig"
+
+config FB_S5P_MDNIE
+	bool "Samsung MDNIE"
+	depends on FB_S3C
+	default n
+	---help---
+	This enables support for Samsung MDNIE feature
+
+config FB_S5P_MDNIE_LITE
+    bool "Samsung MDNIE LITE"
+    depends on FB_S3C
+    default n
+    ---help---
+    This enables support for Samsung MDNIE LITE feature
+
+config FB_EXYNOS_FIMD_SYSMMU_DISABLE
+	bool "Samsung FIMD SYSMMU DISABLE"
+	depends on FB_S3C
+	default n
+	---help---
+	  This disables the systemmmu for Samsung FIMD
+
+config FB_EXYNOS_FIMD_V8
+	bool "regiter extensions for FIMD version 8"
+	depends on FB_S3C && (ARCH_EXYNOS5 || ARCH_EXYNOS4 || ARCH_EXYNOS3)
+	default y
+	---help---
+
+config FB_EXYNOS_FIMD_MC
+	bool "Support of media controller on FIMD for local path"
+	depends on FB_S3C && ARCH_EXYNOS5 && MEDIA_CONTROLLER
+	default y
+	---help---
+
+config FB_EXYNOS_FIMD_MC_WB
+	bool "Support of media controller on FIMD for writeback to GScaler"
+	depends on FB_S3C && ARCH_EXYNOS5 && MEDIA_CONTROLLER
+	default y
+	---help---
+
 config FB_S3C_DEBUG_REGWRITE
        bool "Debug register writes"
        depends on FB_S3C
        ---help---
          Show all register writes via printk(KERN_DEBUG)
+
+config S5P_DP
+	tristate "Samsung SoC DP support"
+	depends on FB_S3C && ARCH_EXYNOS5
+	default n
+	---help---
+	  This enables support for DP device.
 
 config FB_S3C2410
 	tristate "S3C2410 LCD framebuffer support"
@@ -2081,6 +2148,11 @@ config FB_S3C2410_DEBUG
 	help
 	  Turn on debugging messages. Note that you can set/unset at run time
 	  through sysfs
+
+config S5P_LCD_INIT
+	bool "LCD init in kernel"
+	depends on FB_S3C
+	default y
 
 config FB_NUC900
         bool "NUC900 LCD framebuffer support"

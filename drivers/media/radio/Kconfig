@@ -17,6 +17,12 @@ config RADIO_SI470X
 
 source "drivers/media/radio/si470x/Kconfig"
 
+config RADIO_RTC6213N
+	bool "RTC6213N FM Radio Receiver support"
+	depends on I2C && VIDEO_V4L2
+
+source "drivers/media/radio/rtc6213n/Kconfig"
+
 config USB_MR800
 	tristate "AverMedia MR 800 USB FM radio support"
 	depends on USB && VIDEO_V4L2

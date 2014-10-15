@@ -11,6 +11,15 @@
 #ifndef __S3C64XX_PLAT_SPI_H
 #define __S3C64XX_PLAT_SPI_H
 
+#include <linux/dma-mapping.h>
+#include <mach/dma.h>
+
+#define HYBRID_MODE     0x0
+#define PIO_MODE        0x1
+
+#define MANUAL_CS_MODE  0x0
+#define AUTO_CS_MODE    0x1
+
 struct platform_device;
 
 /**
@@ -26,6 +35,7 @@ struct platform_device;
  */
 struct s3c64xx_spi_csinfo {
 	u8 fb_delay;
+	u8 cs_mode;
 	unsigned line;
 	void (*set_level)(unsigned line_id, int lvl);
 };
@@ -49,12 +59,60 @@ struct s3c64xx_spi_info {
 	int num_cs;
 
 	int (*cfg_gpio)(struct platform_device *pdev);
+	void (*gpio_pull_up)(bool pull_up);
 
 	/* Following two fields are for future compatibility */
 	int fifo_lvl_mask;
 	int rx_lvl_offset;
 	int high_speed;
 	int tx_st_done;
+	int dma_mode;
+};
+
+struct s3c64xx_spi_dma_data {
+	unsigned		ch;
+	enum dma_transfer_direction direction;
+	enum dma_ch	dmach;
+};
+
+/**
+ * struct s3c64xx_spi_driver_data - Runtime info holder for SPI driver.
+ * @clk: Pointer to the spi clock.
+ * @src_clk: Pointer to the clock used to generate SPI signals.
+ * @master: Pointer to the SPI Protocol master.
+ * @cntrlr_info: Platform specific data for the controller this driver manages.
+ * @tgl_spi: Pointer to the last CS left untoggled by the cs_change hint.
+ * @queue: To log SPI xfer requests.
+ * @lock: Controller specific lock.
+ * @state: Set of FLAGS to indicate status.
+ * @rx_dmach: Controller's DMA channel for Rx.
+ * @tx_dmach: Controller's DMA channel for Tx.
+ * @sfr_start: BUS address of SPI controller regs.
+ * @regs: Pointer to ioremap'ed controller registers.
+ * @irq: interrupt
+ * @xfer_completion: To indicate completion of xfer task.
+ * @cur_mode: Stores the active configuration of the controller.
+ * @cur_bpw: Stores the active bits per word settings.
+ * @cur_speed: Stores the active xfer clock speed.
+ */
+struct s3c64xx_spi_driver_data {
+	void __iomem                    *regs;
+	struct clk                      *clk;
+	struct clk                      *src_clk;
+	struct platform_device          *pdev;
+	struct spi_master               *master;
+	struct s3c64xx_spi_info  *cntrlr_info;
+	struct spi_device               *tgl_spi;
+	struct list_head                queue;
+	spinlock_t                      lock;
+	unsigned long                   sfr_start;
+	struct completion               xfer_completion;
+	unsigned                        state;
+	unsigned                        cur_mode, cur_bpw;
+	unsigned                        cur_speed;
+	struct s3c64xx_spi_dma_data	rx_dma;
+	struct s3c64xx_spi_dma_data	tx_dma;
+	struct samsung_dma_ops		*ops;
 };
 
 /**
@@ -73,13 +131,21 @@ extern void s3c64xx_spi1_set_platdata(struct s3c64xx_spi_info *pd,
 				      int src_clk_nr, int num_cs);
 extern void s3c64xx_spi2_set_platdata(struct s3c64xx_spi_info *pd,
 				      int src_clk_nr, int num_cs);
+extern void s3c64xx_spi3_set_platdata(struct s3c64xx_spi_info *pd,
+				      int src_clk_nr, int num_cs);
+
+/* defined to setup chip select GPIO and clock of SPI */
+extern int exynos_spi_cfg_cs(int gpio, int ch_num);
+extern void exynos_spi_clock_setup(struct device *spi_dev, int ch_num);
 
 /* defined by architecture to configure gpio */
 extern int s3c64xx_spi0_cfg_gpio(struct platform_device *dev);
 extern int s3c64xx_spi1_cfg_gpio(struct platform_device *dev);
 extern int s3c64xx_spi2_cfg_gpio(struct platform_device *dev);
+extern int s3c64xx_spi3_cfg_gpio(struct platform_device *dev);
 
 extern struct s3c64xx_spi_info s3c64xx_spi0_pdata;
 extern struct s3c64xx_spi_info s3c64xx_spi1_pdata;
 extern struct s3c64xx_spi_info s3c64xx_spi2_pdata;
+extern struct s3c64xx_spi_info s3c64xx_spi3_pdata;
 #endif /* __S3C64XX_PLAT_SPI_H */

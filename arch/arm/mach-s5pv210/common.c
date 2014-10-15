@@ -37,6 +37,7 @@
 #include <plat/devs.h>
 #include <plat/sdhci.h>
 #include <plat/adc-core.h>
+#include <plat/wdt-core.h>
 #include <plat/ata-core.h>
 #include <plat/fb-core.h>
 #include <plat/fimc-core.h>
@@ -177,6 +178,7 @@ void __init s5pv210_map_io(void)
 	s5pv210_default_sdhci3();
 
 	s3c_adc_setname("samsung-adc-v3");
+	s3c_wdt_setname("s3c2410-wdt-v1");
 
 	s3c_cfcon_setname("s5pv210-pata");
 

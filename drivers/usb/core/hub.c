@@ -968,7 +968,11 @@ static void hub_activate(struct usb_hub *hub, enum hub_activation_type type)
 	 * If any port-status changes do occur during this delay, khubd
 	 * will see them later and handle them normally.
 	 */
+#if defined(CONFIG_LINK_DEVICE_HSIC)
+	if (need_debounce_delay && type != HUB_RESET_RESUME) {
+#else
 	if (need_debounce_delay) {
+#endif
 		delay = HUB_DEBOUNCE_STABLE;
 
 		/* Don't do a long sleep inside a workqueue routine */
@@ -1387,6 +1391,7 @@ static int hub_probe(struct usb_interface *intf, const struct usb_device_id *id)
 	hdev = interface_to_usbdev(intf);
 
 	/* Hubs have proper suspend/resume support. */
+	if (!hdev->parent)
 	usb_enable_autosuspend(hdev);
 
 	if (hdev->level == MAX_TOPO_LEVEL) {
@@ -1444,8 +1449,12 @@ descriptor_error:
 	if (hdev->speed == USB_SPEED_HIGH)
 		highspeed_hubs++;
 
-	if (hub_configure(hub, endpoint) >= 0)
+	if (hub_configure(hub, endpoint) >= 0) {
+#if defined(CONFIG_LINK_DEVICE_HSIC)
+		usb_detect_quirks(hdev);
+#endif
 		return 0;
+	}
 
 	hub_disconnect (intf);
 	return -ENODEV;
@@ -2793,6 +2802,9 @@ int usb_port_resume(struct usb_device *udev, pm_message_t msg)
 	}
 
  SuspendCleared:
+#if defined(CONFIG_LINK_DEVICE_HSIC)
+	pr_info("mif: %s: %d, %d\n", __func__, portstatus, portchange);
+#endif
 	if (status == 0) {
 		if (hub_is_superspeed(hub->hdev)) {
 			if (portchange & USB_PORT_STAT_C_LINK_STATE)
@@ -3463,9 +3475,22 @@ static void hub_port_connect_change(struct usb_hub *hub, int port1,
 			 * remote wakeup event.
 			 */
 			status = usb_remote_wakeup(udev);
+#if defined(CONFIG_LINK_DEVICE_HSIC)
+		} else if (udev->state == USB_STATE_CONFIGURED &&
+			udev->persist_enabled &&
+			udev->dev.power.runtime_status == RPM_RESUMING) {
+			/* usb 1-2 runtime resume was called by host wakeup
+			 * isr routine . Nothing to do */
+			pr_info("%s: aleady host-wakup resumed\n", __func__);
+			status = 0;
 #endif
-
+#endif
 		} else {
+#if defined(CONFIG_USB_SUSPEND) && defined(CONFIG_LINK_DEVICE_HSIC)
+			pr_info("%s: ENODEV, udev->state=%d, rpm=%d\n",
+				__func__, udev->state,
+				udev->dev.power.runtime_status);
+#endif
 			status = -ENODEV;	/* Don't resuscitate */
 		}
 		usb_unlock_device(udev);

@@ -20,6 +20,7 @@
 #include <asm/mach/irq.h>
 #include <mach/hardware.h>
 #include <mach/map.h>
+#include <mach/dma.h>
 
 #include <plat/devs.h>
 
@@ -27,7 +28,34 @@
 static struct resource exynos##_series##_uart##_nr##_resource[] = {	\
 	[0] = DEFINE_RES_MEM(EXYNOS##_series##_PA_UART##_nr, EXYNOS##_series##_SZ_UART),	\
 	[1] = DEFINE_RES_IRQ(EXYNOS##_series##_IRQ_UART##_nr),	\
+	[2] = DEFINE_RES_DMA(DMACH_UART##_nr##_TX),	\
+	[3] = DEFINE_RES_DMA(DMACH_UART##_nr##_RX),	\
 };
+
+EXYNOS_UART_RESOURCE(3, 0)
+EXYNOS_UART_RESOURCE(3, 1)
+EXYNOS_UART_RESOURCE(3, 2)
+EXYNOS_UART_RESOURCE(3, 3)
+
+struct  s3c24xx_uart_resources exynos3_uart_resources[] __initdata = {
+	[0] = {
+		.resources      = exynos3_uart0_resource,
+		.nr_resources   = ARRAY_SIZE(exynos3_uart0_resource),
+	},
+	[1] = {
+		.resources      = exynos3_uart1_resource,
+		.nr_resources   = ARRAY_SIZE(exynos3_uart1_resource),
+	},
+	[2] = {
+		.resources      = exynos3_uart2_resource,
+		.nr_resources   = ARRAY_SIZE(exynos3_uart2_resource),
+	},
+	[3] = {
+		.resources      = exynos3_uart3_resource,
+		.nr_resources   = ARRAY_SIZE(exynos3_uart3_resource),
+	},
+};
+
 
 EXYNOS_UART_RESOURCE(4, 0)
 EXYNOS_UART_RESOURCE(4, 1)

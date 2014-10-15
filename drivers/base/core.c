@@ -1753,8 +1753,7 @@ int device_move(struct device *dev, struct device *new_parent,
 		set_dev_node(dev, dev_to_node(new_parent));
 	}
 
-	if (!dev->class)
-		goto out_put;
+	if (dev->class) {
 	error = device_move_class_links(dev, old_parent, new_parent);
 	if (error) {
 		/* We ignore errors on cleanup since we're hosed anyway... */
@@ -1773,6 +1772,7 @@ int device_move(struct device *dev, struct device *new_parent,
 		put_device(new_parent);
 		goto out;
 	}
+	}
 	switch (dpm_order) {
 	case DPM_ORDER_NONE:
 		break;
@@ -1786,7 +1786,7 @@ int device_move(struct device *dev, struct device *new_parent,
 		device_pm_move_last(dev);
 		break;
 	}
-out_put:
+
 	put_device(old_parent);
 out:
 	device_pm_unlock();
