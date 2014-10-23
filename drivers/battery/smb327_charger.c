@@ -19,7 +19,7 @@
 static bool is_siop_limited;
 #endif
 
-extern int system_rev;
+extern unsigned int system_rev;
 
 static int smb327_i2c_write(struct i2c_client *client,
 				int reg, u8 *buf)
