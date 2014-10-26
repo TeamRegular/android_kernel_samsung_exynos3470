@@ -1424,8 +1424,8 @@ CONFIG_WLAN=y
 CONFIG_WIFI_CONTROL_FUNC=y
 # CONFIG_ATH_COMMON is not set
 # CONFIG_BCMDHD is not set
-CONFIG_BCMDHD_FW_PATH="/system/etc/firmware/fw_bcmdhd.bin"
-CONFIG_BCMDHD_NVRAM_PATH="/system/etc/wifi/bcmdhd.cal"
+CONFIG_BCMDHD_FW_PATH="/system/etc/wifi/bcmdhd_sta.bin"
+CONFIG_BCMDHD_NVRAM_PATH="/system/etc/wifi/nvram_net.txt"
 CONFIG_BRCM_CCX=y
 # CONFIG_BCM4330 is not set
 # CONFIG_BCM4343 is not set
